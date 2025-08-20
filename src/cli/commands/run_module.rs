@@ -1,12 +1,13 @@
-// src/cli/commands/run_module.rs
+// في src/cli/commands/run_module.rs
 use crate::cli::CliState;
 
-/// Command to execute the currently selected module
 pub async fn run_module(state: &CliState) {
     match &state.current_module {
         Some(module_name) => {
             println!("[+] Running module: {}", module_name);
             if let Some(module) = state.module_handler.get_module(module_name) {
+                // هنا يجب تمرير الإعدادات للوحدة!
+                // هذه تحتاج تعديل Module trait ليقبل parameters
                 match module.run().await {
                     Ok(result) => println!("[+] Result: {}", result),
                     Err(e) => println!("[-] Error: {}", e),

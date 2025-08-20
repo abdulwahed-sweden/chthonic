@@ -1,10 +1,14 @@
 // src/modules/mod.rs
 pub mod exploits;
-pub mod auxiliary; // تأكد من فك التعليق أو وجود هذا السطر
+pub mod auxiliary;
 // pub mod payloads;
 // pub mod encoders;
 
-use crate::core::module_handler::{ModuleHandler, ModuleBox};
+// إما: مسح ModuleBox غير المستخدم
+use crate::core::module_handler::ModuleHandler;
+// أو: استخدام allow لتجاهل التحذير
+// #[allow(unused_imports)]
+// use crate::core::module_handler::{ModuleHandler, ModuleBox};
 
 pub fn register_all_modules(handler: &mut ModuleHandler) {
     // سجل المستغلات
@@ -15,8 +19,8 @@ pub fn register_all_modules(handler: &mut ModuleHandler) {
 
     // سجل الأدوات المساعدة (Auxiliary)
     handler.register_module(
-        "auxiliary/port_scanner",
-        Box::new(auxiliary::PortScanner), // أضف هذا السطر
+        "auxiliary/port_scanner",  // تم تصحيح المسافة البادئة
+        Box::new(auxiliary::PortScanner::default()),
     );
 
     // هنا لاحقًا: payloads و encoders

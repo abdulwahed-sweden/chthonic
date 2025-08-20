@@ -1,51 +1,63 @@
-// src/core/module_handler.rs
-use std::collections::HashMap;
+//! Module handler core component for Chthonic framework.
+//! Defines the base Module trait and management structures.
+
 use async_trait::async_trait;
 
-// 1. تعريف "الواجهة" (Trait) لأي وحدة (Module) في نظامنا
+/// Base trait that all Chthonic modules must implement.
+/// This defines the common interface for exploits, payloads, and auxiliary modules.
 #[async_trait]
 pub trait Module {
-    // اسم الوحدة
+    /// Returns the canonical name of the module (e.g., "exploit/windows/smb/eternalblue")
     fn name(&self) -> &'static str;
-    // وصفها
+    
+    /// Returns a brief description of the module's functionality
     fn description(&self) -> &'static str;
-    // المؤلف (إنتا 😎)
+    
+    /// Returns the author(s) of the module
     fn author(&self) -> &'static str;
-    // الإصدار
+    
+    /// Returns the module version string
     fn version(&self) -> &'static str;
-
-    // هذه هي الدالة الأساسية التي ستنفذ الوحدة وظيفتها
-    async fn run(&self) -> Result<String, String>; // ترجع Result، إما نجاح (String) أو فشل (String)
+    
+    /// Executes the module's main functionality with provided options
+    /// # Arguments
+    /// * `options` - Key-value pairs of module configuration options
+    async fn run(&self, options: &[(String, String)]) -> Result<String, String>;
 }
 
-// 2. نوع لتخزين أي وحدة (ككائن) في HashMap
+/// Type alias for boxed modules to simplify storage and handling
 pub type ModuleBox = Box<dyn Module + Send + Sync>;
 
-// 3. الهيكل الرئيسي الذي يدير جميع الوحدات
+/// Manages registration and retrieval of all available modules
 pub struct ModuleHandler {
-    modules: HashMap<&'static str, ModuleBox>, // الخريطة: [اسم الوحدة] => [الوحدة نفسها]
+    modules: std::collections::HashMap<&'static str, ModuleBox>,
 }
 
 impl ModuleHandler {
-    // إنشاء مدير وحدات جديد
+    /// Creates a new empty ModuleHandler
     pub fn new() -> Self {
         ModuleHandler {
-            modules: HashMap::new(),
+            modules: std::collections::HashMap::new(),
         }
     }
-
-    // تسجيل وحدة جديدة (مهم: نستدعي هذه الدالة لكل وحدة نصنعها)
+    
+    /// Registers a new module with the handler
+    /// # Arguments
+    /// * `name` - The canonical name of the module
+    /// * `module` - Boxed module instance
     pub fn register_module(&mut self, name: &'static str, module: ModuleBox) {
         self.modules.insert(name, module);
         println!("[+] Module registered: {}", name);
     }
-
-    // الحصول على وحدة بواسطة اسمها (مهم لأمر `use` لاحقًا)
+    
+    /// Retrieves a module by name
+    /// # Arguments
+    /// * `name` - The name of the module to retrieve
     pub fn get_module(&self, name: &str) -> Option<&ModuleBox> {
         self.modules.get(name)
     }
-
-    // سرد جميع الوحدات المسجلة (مهم لأمر `show modules` لاحقًا)
+    
+    /// Lists all registered modules with their details
     pub fn list_modules(&self) {
         if self.modules.is_empty() {
             println!("[-] No modules registered.");

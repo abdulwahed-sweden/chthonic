@@ -1,10 +1,11 @@
 // src/main.rs
-// Remove or comment out: mod lib;
+// ... (بقية الـ imports)
 mod cli;
 mod core;
 mod modules;
 
 use crate::core::module_handler::ModuleHandler;
+use std::collections::HashMap; // أضف هذا الاستيراد
 
 #[tokio::main]
 async fn main() {
@@ -19,7 +20,8 @@ async fn main() {
     let cli_state = cli::CliState {
         module_handler,
         current_module: None,
+        module_options: HashMap::new(), // أضف هذا الحقل
     };
 
-    cli::run(cli_state).await; // Transfer control to the CLI
+    cli::run(cli_state).await;
 }
