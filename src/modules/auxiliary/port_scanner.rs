@@ -7,6 +7,7 @@ use tokio::net::TcpStream;
 use tokio::time::timeout;
 
 use crate::core::module_handler::Module;
+use crate::utils::theme;
 
 /// Port scanner module for TCP port discovery
 pub struct PortScanner {
@@ -63,7 +64,7 @@ impl Module for PortScanner {
             return Err("Target host cannot be empty".to_string());
         }
 
-        println!("[+] Starting port scan on: {}", target_host);
+        println!("{}", theme::info(&format!("Starting port scan on: {}", target_host)));
         let results = scan_ports(target_host, &ports_to_scan).await;
         
         if results.is_empty() {
@@ -138,7 +139,7 @@ async fn scan_ports(target_host: &str, ports: &[u16]) -> Vec<u16> {
             let address = format!("{}:{}", target, port);
             match timeout(connection_timeout, TcpStream::connect(&address)).await {
                 Ok(Ok(_)) => {
-                    println!("[+] Port {} is OPEN", port);
+                    println!("{}", theme::success(&format!("Port {} is OPEN", theme::port(&port.to_string()))));
                     Some(port)
                 },
                 _ => None,

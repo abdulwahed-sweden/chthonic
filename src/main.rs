@@ -1,15 +1,17 @@
 // src/main.rs
-// ... (بقية الـ imports)
 mod cli;
 mod core;
 mod modules;
+mod utils;  // أضف هذا السطر
 
 use crate::core::module_handler::ModuleHandler;
-use std::collections::HashMap; // أضف هذا الاستيراد
+use crate::utils::theme;  // استيراد الثيم من utils
+use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() {
-    println!("[+] Chthonic Rising from the Underworld... 🦀☠️");
+    // استخدم المسار الصحيح للثيم
+    theme::print_banner();
 
     // Initialize core components
     let _manager = core::session_manager::SessionManager::new();
@@ -20,7 +22,7 @@ async fn main() {
     let cli_state = cli::CliState {
         module_handler,
         current_module: None,
-        module_options: HashMap::new(), // أضف هذا الحقل
+        module_options: HashMap::new(),
     };
 
     cli::run(cli_state).await;
