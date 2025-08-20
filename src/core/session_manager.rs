@@ -1,38 +1,34 @@
-// src/core/session_manager.rs
+#![allow(dead_code, unused_variables)]
+
 use std::collections::HashMap;
+// TcpStream مش مستخدمة لسه، لكن بنحطها للاستخدام المستقبلي
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 
-// نوع الجلسة - ممكن نوسعها بعدين
 pub enum SessionType {
     Shell(TcpStream),
-    // Meterpreter, VNC, etc. future types
 }
 
-// معلومات الجلسة
 pub struct Session {
     pub id: u32,
     pub target: String,
     pub session_type: SessionType,
-    pub info: String, // معلومات إضافية
+    pub info: String,
 }
 
-// الهيكل الرئيسي لمدير الجلسات
 pub struct SessionManager {
     sessions: HashMap<u32, Session>,
-    next_id: Mutex<u32>, // Mutex علشان async
+    next_id: Mutex<u32>,
 }
 
 impl SessionManager {
-    // إنشاء مدير جلسات جديد
     pub fn new() -> Self {
         SessionManager {
             sessions: HashMap::new(),
-            next_id: Mutex::new(1), // يبدأ ID من 1
+            next_id: Mutex::new(1),
         }
     }
 
-    // إضافة جلسة جديدة
     pub async fn add_session(&mut self, target: String, session_type: SessionType, info: String) -> u32 {
         let mut id_lock = self.next_id.lock().await;
         let id = *id_lock;
@@ -40,17 +36,16 @@ impl SessionManager {
 
         let session = Session {
             id,
-            target,
+            target: target.clone(), // استخدم clone هنا
             session_type,
-            info,
+            info: info.clone(),     // واستخدم clone هنا
         };
 
         self.sessions.insert(id, session);
-        println!("[+] New session {} opened to {}", id, target);
+        println!("[+] New session {} opened to {}", id, target); // target لسه موجودة بسبب ال clone
         id
     }
 
-    // إدراة الجلسات النشطة
     pub fn list_sessions(&self) {
         if self.sessions.is_empty() {
             println!("[-] No active sessions.");
@@ -60,8 +55,4 @@ impl SessionManager {
             }
         }
     }
-
-    // (لاحقًا) دوال لإيجاد جلسة، إغلاق جلسة، إلخ...
-    // pub async fn get_session(&self, id: u32) -> Option<&Session> { ... }
-    // pub fn kill_session(&mut self, id: u32) { ... }
 }

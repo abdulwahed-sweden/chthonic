@@ -1,16 +1,25 @@
 // src/main.rs
+// Remove or comment out: mod lib;
 mod cli;
 mod core;
-// ... other mods
+mod modules;
+
+use crate::core::module_handler::ModuleHandler;
 
 #[tokio::main]
 async fn main() {
     println!("[+] Chthonic Rising from the Underworld... 🦀☠️");
 
-    // اختبر مدير الجلسات
-    let mut manager = core::session_manager::SessionManager::new();
-    manager.list_sessions(); // يجب تطبع: No active sessions.
+    // Initialize core components
+    let _manager = core::session_manager::SessionManager::new();
+    let mut module_handler = ModuleHandler::new();
+    modules::register_all_modules(&mut module_handler);
 
-    // (لاحقًا) هنا رح نمرر المدير للـ CLI
-    // cli::run(manager).await;
+    // Create CLI state and start the interactive loop
+    let cli_state = cli::CliState {
+        module_handler,
+        current_module: None,
+    };
+
+    cli::run(cli_state).await; // Transfer control to the CLI
 }
