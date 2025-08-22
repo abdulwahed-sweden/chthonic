@@ -1,27 +1,24 @@
 // src/modules/mod.rs
 pub mod exploits;
 pub mod auxiliary;
-// pub mod payloads;
-// pub mod encoders;
 
-// إما: مسح ModuleBox غير المستخدم
-use crate::core::module_handler::ModuleHandler;
-// أو: استخدام allow لتجاهل التحذير
-// #[allow(unused_imports)]
-// use crate::core::module_handler::{ModuleHandler, ModuleBox};
+use crate::core::module_handler::ModuleHandler; // امسح ModuleBox
 
 pub fn register_all_modules(handler: &mut ModuleHandler) {
-    // سجل المستغلات
+    // Register exploits
     handler.register_module(
         "exploit/test_exploit",
         Box::new(exploits::TestExploit),
     );
 
-    // سجل الأدوات المساعدة (Auxiliary)
+    // Register auxiliary modules
     handler.register_module(
-        "auxiliary/port_scanner",  // تم تصحيح المسافة البادئة
+        "auxiliary/port_scanner",
         Box::new(auxiliary::PortScanner::default()),
     );
 
-    // هنا لاحقًا: payloads و encoders
+    handler.register_module(
+        "auxiliary/http_header_injection",
+        Box::new(auxiliary::HttpHeaderInjection::default()),
+    );
 }

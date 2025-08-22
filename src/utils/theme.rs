@@ -20,7 +20,7 @@ pub fn print_banner() {
     "#;
 
     println!("{}", banner.bright_red().bold());
-    println!("{}", "        ↳ UNDERWORLD PENETRATION FRAMEWORK 🦀☠️\n".bright_black().italic());
+    println!("{}", "        ↳ UNDERWORLD PENETRATION FRAMEWORK ... 🦀☠️\n".bright_black().italic());
 }
 
 /// Formats success messages with green checkmark and bold text
