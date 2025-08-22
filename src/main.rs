@@ -2,17 +2,20 @@
 mod cli;
 mod core;
 mod modules;
-mod utils;  // أضف هذا السطر
+mod utils;
 
 use crate::core::module_handler::ModuleHandler;
-use crate::utils::theme;  // استيراد الثيم من utils
+use crate::utils::theme;
 use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() {
-    // استخدم المسار الصحيح للثيم
+    // Initialize theme and display banner (مرة واحدة فقط)
     theme::print_banner();
-
+    
+    // Initialize all core systems
+    crate::core::init_core();
+    
     // Initialize core components
     let _manager = core::session_manager::SessionManager::new();
     let mut module_handler = ModuleHandler::new();

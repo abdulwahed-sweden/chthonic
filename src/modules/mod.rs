@@ -21,4 +21,9 @@ pub fn register_all_modules(handler: &mut ModuleHandler) {
         "auxiliary/http_header_injection",
         Box::new(auxiliary::HttpHeaderInjection::default()),
     );
+
+    handler.register_module(
+    "auxiliary/sql_injection",
+    Box::new(auxiliary::SQLInjectionScanner::default()),
+    );
 }
