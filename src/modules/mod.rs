@@ -1,17 +1,20 @@
-// src/modules/mod.rs
+//! Global modules registry.
+//!
+//! Each module must be registered here so the CLI can list and use it.
+
 pub mod exploits;
 pub mod auxiliary;
 
 use crate::core::module_handler::ModuleHandler;
 
 pub fn register_all_modules(handler: &mut ModuleHandler) {
-    // Register exploits
+    // Exploits
     handler.register_module(
         "exploit/test_exploit",
         Box::new(exploits::TestExploit),
     );
 
-    // Register auxiliary modules
+    // Auxiliary (scanners)
     handler.register_module(
         "auxiliary/port_scanner",
         Box::new(auxiliary::PortScanner::default()),
