@@ -2,7 +2,7 @@
 pub mod exploits;
 pub mod auxiliary;
 
-use crate::core::module_handler::ModuleHandler; // امسح ModuleBox
+use crate::core::module_handler::ModuleHandler;
 
 pub fn register_all_modules(handler: &mut ModuleHandler) {
     // Register exploits
@@ -23,7 +23,7 @@ pub fn register_all_modules(handler: &mut ModuleHandler) {
     );
 
     handler.register_module(
-    "auxiliary/sql_injection",
-    Box::new(auxiliary::SQLInjectionScanner::default()),
+        "auxiliary/sql_injection",
+        Box::new(auxiliary::SQLInjectionScanner::default()),
     );
 }

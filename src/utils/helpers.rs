@@ -9,6 +9,9 @@
 /// 
 /// # Returns
 /// Option containing reference to the value if found
+/// 
+use std::collections::HashSet;
+
 pub fn extract_option<'a>(options: &'a [(String, String)], key: &str) -> Option<&'a String> {
     options.iter()
         .find(|(k, _)| k == key)
