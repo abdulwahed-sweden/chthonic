@@ -24,6 +24,8 @@ impl Default for HttpHeaderInjection {
                 "User-Agent".to_string(), 
                 "Referer".to_string(),
                 "X-Real-IP".to_string(),
+                "X-Originating-IP".to_string(),
+                "Host".to_string(),
             ],
         }
     }
@@ -36,15 +38,15 @@ impl Module for HttpHeaderInjection {
     }
 
     fn description(&self) -> &'static str {
-        "Scans for HTTP header injection vulnerabilities by sending malicious header payloads"
+        "Advanced HTTP header injection scanner testing for malicious header payloads and reflection vulnerabilities"
     }
 
     fn author(&self) -> &'static str {
-        "Chthonic Team"
+        "Chthonic Underworld Team"
     }
 
     fn version(&self) -> &'static str {
-        "1.0.0"
+        "1.1.0"
     }
 
     async fn run(&self, options: &[(String, String)]) -> Result<String, String> {
@@ -52,48 +54,66 @@ impl Module for HttpHeaderInjection {
             .map(|s| s.as_str())
             .unwrap_or(&self.default_target);
 
-        let test_headers = self.default_headers.clone();
-
         println!("{}", theme::info(&format!("Scanning: {}", target_url)));
         println!("{}", theme::info("Testing header injection vulnerabilities..."));
+        println!("{}", theme::warning("This may take 30-60 seconds..."));
+        println!("{}", theme::divider());
 
         let client = Client::builder()
-            .timeout(Duration::from_secs(5))
+            .timeout(Duration::from_secs(3))
+            .user_agent("Chthonic/1.0 Security Scanner")
             .build()
             .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
 
         let mut vulnerabilities = Vec::new();
+        let test_headers = self.default_headers.clone();
+        let mut total_tests = 0;
 
-        for header in test_headers {
+        for (i, header) in test_headers.iter().enumerate() {
+            println!("{}", theme::info(&format!("[{}/{}] Testing header: {}", i+1, test_headers.len(), header)));
+            
             let test_values = vec![
                 "127.0.0.1",
-                "localhost",
+                "localhost", 
                 "admin'--",
-                "\"; sleep(5); --",
-                "<?php system('id'); ?>",
+                "evil.com",
+                "<script>alert(1)</script>",
             ];
 
             for test_value in test_values {
-                if let Ok(result) = test_header_injection(&client, target_url, &header, test_value).await {
+                total_tests += 1;
+                print!(".");
+                std::io::Write::flush(&mut std::io::stdout()).unwrap();
+                
+                if let Ok(result) = test_header_injection(&client, target_url, header, test_value).await {
                     if result.vulnerable {
-                        vulnerabilities.push(format!("{}: {} = {}", result.header, result.payload, result.evidence));
-                        println!("{}", theme::error(&format!("VULNERABLE: {} = {}", header, test_value)));
+                        println!("\n{}", theme::error(&format!("🚨 VULNERABLE: {} = {}", header, test_value)));
+                        println!("{}", theme::warning(&format!("Evidence: {}", result.evidence)));
+                        vulnerabilities.push(format!("{}: {} ({})", result.header, result.payload, result.evidence));
                     }
                 }
             }
+            println!(" ✓");
         }
 
+        println!("{}", theme::divider());
+        println!("{}", theme::info(&format!("Completed {} tests on {} headers", total_tests, test_headers.len())));
+
         if vulnerabilities.is_empty() {
-            Ok("No header injection vulnerabilities found.".to_string())
+            println!("{}", theme::success("✅ No header injection vulnerabilities detected"));
+            Ok("Scan completed successfully - No vulnerabilities found".to_string())
         } else {
-            Ok(format!("Found {} vulnerabilities:\n{}", 
-                vulnerabilities.len(), 
-                vulnerabilities.join("\n")))
+            println!("{}", theme::error(&format!("🚨 SECURITY ALERT: {} vulnerabilities detected!", vulnerabilities.len())));
+            for vuln in &vulnerabilities {
+                println!("{}", theme::warning(&format!("  • {}", vuln)));
+            }
+            Ok(format!("🚨 Critical: {} header injection vulnerabilities found", vulnerabilities.len()))
         }
     }
 }
 
 // Helper struct for test results
+#[derive(Debug)]
 struct InjectionTestResult {
     header: String,
     payload: String,
@@ -109,26 +129,70 @@ async fn test_header_injection(
     payload: &str,
 ) -> Result<InjectionTestResult, String> {
     let response = timeout(
-        Duration::from_secs(10),
+        Duration::from_secs(5),
         client.get(url).header(header, payload).send()
     ).await
-    .map_err(|e| format!("Timeout: {}", e))?
+    .map_err(|_| "Request timeout".to_string())?
     .map_err(|e| format!("Request failed: {}", e))?;
 
-    // احفظ الـ headers قبل استدعاء text()
+    // Clone headers before consuming response
     let response_headers = response.headers().clone();
-    let body = response.text().await.map_err(|e| format!("Failed to read response: {}", e))?;
+    let status = response.status();
+    
+    // Read response body
+    let body = response.text().await
+        .map_err(|e| format!("Failed to read response: {}", e))?;
 
-    // Check for evidence of injection in response
-    let vulnerable = body.contains(payload) || 
-                    response_headers.get(header)
-                        .map(|h| h.to_str().unwrap_or("").contains(payload))
-                        .unwrap_or(false);
+    // Check for various types of header injection evidence
+    let mut evidence = String::new();
+    let mut vulnerable = false;
+
+    // Check if payload is reflected in response body
+    if body.contains(payload) {
+        evidence = format!("Payload '{}' reflected in response body", payload);
+        vulnerable = true;
+    }
+
+    // Check if payload is reflected in response headers
+    for (name, value) in response_headers.iter() {
+        if let Ok(value_str) = value.to_str() {
+            if value_str.contains(payload) {
+                evidence = format!("Payload '{}' reflected in response header '{}'", payload, name.as_str());
+                vulnerable = true;
+                break;
+            }
+        }
+    }
+
+    // Check for Host header injection (potential cache poisoning)
+    if header.to_lowercase() == "host" && status.is_success() {
+        evidence = format!("Host header injection accepted (potential cache poisoning)");
+        vulnerable = true;
+    }
+
+    // Check for X-Forwarded-For IP spoofing acceptance
+    if header.contains("Forwarded") || header.contains("Real-IP") || header.contains("Client-IP") {
+        if status.is_success() && (payload == "127.0.0.1" || payload == "localhost") {
+            // Additional check: see if the IP appears in response
+            if body.contains(payload) {
+                evidence = format!("IP spoofing via {} header successful", header);
+                vulnerable = true;
+            }
+        }
+    }
+
+    // Check for script injection in User-Agent
+    if header.to_lowercase() == "user-agent" && payload.contains("<script>") {
+        if body.contains(payload) || body.contains("script") {
+            evidence = format!("Potential XSS via User-Agent header");
+            vulnerable = true;
+        }
+    }
 
     Ok(InjectionTestResult {
         header: header.to_string(),
         payload: payload.to_string(),
-        evidence: if vulnerable { "Payload reflected in response".to_string() } else { "No reflection".to_string() },
+        evidence: if vulnerable { evidence } else { "No reflection detected".to_string() },
         vulnerable,
     })
 }
